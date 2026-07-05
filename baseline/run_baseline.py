@@ -1,42 +1,42 @@
 """
-Step 7 & 8: Frontier-model baseline for contract clause classification.
+Frontier-model baseline for contract clause classification.
 
-Uses the Anthropic Claude API (claude-3-5-haiku) with a 5-shot prompt.
-Runs on the full test set and records per-category P/R/F1, macro-F1,
-cost (tokens), and latency.
+Supports multiple providers:
+  --provider anthropic  (claude-haiku-4-5, requires ANTHROPIC_API_KEY + credits)
+  --provider openai     (gpt-4o-mini, requires OPENAI_API_KEY)
+  --provider mock       (keyword heuristic, no API needed — for pipeline testing)
 
 Usage:
-    # Dry run on 5 examples (Step 7 - prompt review)
-    python baseline/run_baseline.py --dry-run
+    # Dry run — review prompt on 5 examples
+    python baseline/run_baseline.py --dry-run [--provider openai]
 
-    # Full test set evaluation (Step 8)
-    python baseline/run_baseline.py
+    # Full test-set evaluation
+    python baseline/run_baseline.py [--provider openai]
 
 Requirements:
-    pip install anthropic scikit-learn
-    ANTHROPIC_API_KEY set in environment
+    pip install anthropic openai scikit-learn python-dotenv
 """
 
 import argparse
 import json
 import os
+import re
 import time
 from pathlib import Path
 
 from dotenv import load_dotenv
-import anthropic
 from sklearn.metrics import classification_report, f1_score
 
-# Load API keys from .env if present
+# Load API keys from repo-root .env if present
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-# ── Paths ──────────────────────────────────────────────────────────────────
+# ── Paths ───────────────────────────────────────────────────────────────────
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent
 TEST_FILE = REPO_ROOT / "data" / "test.jsonl"
 RESULTS_FILE = SCRIPT_DIR / "baseline_results.json"
 
-# ── Categories ─────────────────────────────────────────────────────────────
+# ── Categories ──────────────────────────────────────────────────────────────
 SELECTED_CATEGORIES = [
     "Governing Law",
     "Anti-Assignment",
@@ -57,8 +57,7 @@ SELECTED_CATEGORIES = [
 
 CATEGORY_LIST_STR = "\n".join(f"  - {c}" for c in SELECTED_CATEGORIES)
 
-# ── Few-shot examples ───────────────────────────────────────────────────────
-# Selected from the TRAIN set — none of these contracts appear in test.
+# ── Few-shot examples (from TRAIN split only) ────────────────────────────────
 FEW_SHOT_EXAMPLES = [
     {
         "input": (
@@ -111,6 +110,8 @@ FEW_SHOT_EXAMPLES = [
 ]
 
 
+# ── Prompt builders ──────────────────────────────────────────────────────────
+
 def build_system_prompt() -> str:
     return (
         "You are a legal AI assistant specialized in analyzing commercial contracts. "
@@ -121,7 +122,6 @@ def build_system_prompt() -> str:
 
 
 def build_user_prompt(clause_text: str) -> str:
-    """Build the full few-shot user message."""
     lines = [
         "Classify the following contract clause into exactly one of these categories:",
         "",
@@ -131,7 +131,6 @@ def build_user_prompt(clause_text: str) -> str:
         "",
         "--- EXAMPLES ---",
     ]
-
     for i, ex in enumerate(FEW_SHOT_EXAMPLES, 1):
         lines.append(f"\nExample {i}:")
         lines.append(f"Clause: {ex['input']}")
@@ -140,66 +139,127 @@ def build_user_prompt(clause_text: str) -> str:
     lines.append("\n--- CLAUSE TO CLASSIFY ---")
     lines.append(f"Clause: {clause_text}")
     lines.append("Category:")
-
     return "\n".join(lines)
 
 
-def classify_clause(client: anthropic.Anthropic, clause_text: str, model: str) -> tuple[str, dict]:
-    """Call the API and return (prediction, usage_info)."""
+def normalise_prediction(raw: str) -> str:
+    """Fuzzy-match model output back to a known category."""
+    cleaned = raw.strip("'\".,;: ")
+    lower = cleaned.lower()
+    for cat in SELECTED_CATEGORIES:
+        if cat.lower() == lower:
+            return cat
+    for cat in SELECTED_CATEGORIES:
+        if cat.lower() in lower or lower in cat.lower():
+            return cat
+    return "None"
+
+
+# ── Provider implementations ─────────────────────────────────────────────────
+
+def classify_anthropic(client, clause_text: str) -> tuple[str, dict]:
+    import anthropic as _anthropic
     t0 = time.time()
-
     message = client.messages.create(
-        model=model,
-        max_tokens=32,  # Category names are short
+        model="claude-haiku-4-5",
+        max_tokens=32,
         system=build_system_prompt(),
-        messages=[
-            {"role": "user", "content": build_user_prompt(clause_text)},
-        ],
-        temperature=0,  # Deterministic for evaluation
+        messages=[{"role": "user", "content": build_user_prompt(clause_text)}],
+        temperature=0,
     )
-
     latency = time.time() - t0
     raw = message.content[0].text.strip()
-
-    # Normalise: strip quotes/punctuation the model may add
-    prediction = raw.strip("'\".,;: ")
-
-    # Fuzzy match back to known categories
-    prediction_lower = prediction.lower()
-    matched = None
-    for cat in SELECTED_CATEGORIES:
-        if cat.lower() == prediction_lower:
-            matched = cat
-            break
-    if matched is None:
-        # Try partial match (e.g., model outputs "IP Ownership")
-        for cat in SELECTED_CATEGORIES:
-            if cat.lower() in prediction_lower or prediction_lower in cat.lower():
-                matched = cat
-                break
-    if matched is None:
-        matched = "None"  # Default to None if we can't parse
-
-    usage = {
+    return normalise_prediction(raw), {
         "input_tokens": message.usage.input_tokens,
         "output_tokens": message.usage.output_tokens,
         "latency_s": round(latency, 3),
         "raw_response": raw,
-        "matched": matched,
     }
-    return matched, usage
 
 
-def run(dry_run: bool = False):
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        raise EnvironmentError(
-            "ANTHROPIC_API_KEY not set. "
-            "Add it to a .env file in the repo root: ANTHROPIC_API_KEY=sk-..."
-        )
+def classify_openai(client, clause_text: str) -> tuple[str, dict]:
+    t0 = time.time()
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        max_tokens=32,
+        temperature=0,
+        messages=[
+            {"role": "system", "content": build_system_prompt()},
+            {"role": "user", "content": build_user_prompt(clause_text)},
+        ],
+    )
+    latency = time.time() - t0
+    raw = response.choices[0].message.content.strip()
+    usage = response.usage
+    return normalise_prediction(raw), {
+        "input_tokens": usage.prompt_tokens,
+        "output_tokens": usage.completion_tokens,
+        "latency_s": round(latency, 3),
+        "raw_response": raw,
+    }
 
-    client = anthropic.Anthropic(api_key=api_key)
-    model = "claude-haiku-4-5"   # Fast, cheap; frontier-quality for this task
+
+# Keyword heuristics for pipeline testing without any API
+_MOCK_KEYWORDS = {
+    "Governing Law":              ["governed by", "governing law", "jurisdiction", "laws of the state"],
+    "Anti-Assignment":            ["shall not assign", "without prior written consent", "consent to assign"],
+    "Cap On Liability":           ["liability.*shall not exceed", "limited to", "in no event.*liable", "cap on liability"],
+    "License Grant":              ["hereby grants", "non-exclusive.*license", "license to use", "sublicense"],
+    "Audit Rights":               ["audit", "inspect.*books", "right to examine"],
+    "Termination For Convenience":["terminate.*without cause", "terminate.*convenience", "days.*written notice.*terminat"],
+    "Exclusivity":                ["exclusive", "solely", "not.*appoint.*other"],
+    "Renewal Term":               ["automatically renew", "renewal term", "successive.*year", "unless.*notice"],
+    "Insurance":                  ["insurance", "liability insurance", "workers.*compensation"],
+    "Ip Ownership Assignment":    ["intellectual property.*assign", "work.*hire", "ip.*ownership", "assigns.*right.*title"],
+    "Change Of Control":          ["change of control", "merger", "acquisition", "majority.*shares"],
+    "Non-Compete":                ["non-compete", "not.*compete", "competing.*business", "competitive.*activit"],
+    "Uncapped Liability":         ["unlimited liability", "no.*limit.*liability", "fully liable", "all damages"],
+    "Revenue/Profit Sharing":     ["revenue.*shar", "profit.*shar", "royalt", "commission", "percentage.*revenue"],
+}
+
+def classify_mock(clause_text: str) -> tuple[str, dict]:
+    """Simple keyword heuristic — no API needed. For pipeline testing only."""
+    t0 = time.time()
+    text_lower = clause_text.lower()
+    for category, patterns in _MOCK_KEYWORDS.items():
+        for pattern in patterns:
+            if re.search(pattern, text_lower):
+                latency = time.time() - t0
+                return category, {"input_tokens": 0, "output_tokens": 0, "latency_s": round(latency, 4), "raw_response": f"[mock:{category}]"}
+    latency = time.time() - t0
+    return "None", {"input_tokens": 0, "output_tokens": 0, "latency_s": round(latency, 4), "raw_response": "[mock:None]"}
+
+
+# ── Main runner ──────────────────────────────────────────────────────────────
+
+def run(dry_run: bool = False, provider: str = "anthropic"):
+    # Initialise client
+    if provider == "anthropic":
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise EnvironmentError("ANTHROPIC_API_KEY not set. Add to .env file.")
+        import anthropic as _anthropic
+        client = _anthropic.Anthropic(api_key=api_key)
+        classify_fn = lambda text: classify_anthropic(client, text)
+        model_label = "claude-haiku-4-5"
+        # Pricing: $0.80/M input, $4.00/M output (mid-2025)
+        input_price, output_price = 0.80, 4.00
+    elif provider == "openai":
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            raise EnvironmentError("OPENAI_API_KEY not set. Add to .env file.")
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key)
+        classify_fn = lambda text: classify_openai(client, text)
+        model_label = "gpt-4o-mini"
+        # Pricing: $0.15/M input, $0.60/M output (mid-2025)
+        input_price, output_price = 0.15, 0.60
+    elif provider == "mock":
+        classify_fn = lambda text: classify_mock(text)
+        model_label = "mock-keyword-heuristic"
+        input_price, output_price = 0.0, 0.0
+    else:
+        raise ValueError(f"Unknown provider: {provider}. Use anthropic, openai, or mock.")
 
     # Load test examples
     with open(TEST_FILE) as f:
@@ -207,64 +267,57 @@ def run(dry_run: bool = False):
 
     if dry_run:
         examples = examples[:5]
-        print(f"=== DRY RUN: evaluating {len(examples)} examples ===\n")
+        print(f"=== DRY RUN ({provider}/{model_label}): {len(examples)} examples ===\n")
     else:
-        print(f"=== FULL RUN: evaluating {len(examples)} examples ===\n")
+        print(f"=== FULL RUN ({provider}/{model_label}): {len(examples)} examples ===\n")
 
-    y_true, y_pred = [], []
-    all_usage = []
-    errors = []
+    y_true, y_pred, all_usage, errors = [], [], [], []
 
     for i, ex in enumerate(examples):
         clause = ex["input"]
         gold = ex["output"]
 
         try:
-            pred, usage = classify_clause(client, clause, model)
+            pred, usage = classify_fn(clause)
         except Exception as e:
             print(f"  [ERROR] example {i}: {e}")
             errors.append({"index": i, "error": str(e)})
-            pred = "None"
-            usage = {}
+            pred, usage = "None", {}
 
         y_true.append(gold)
         y_pred.append(pred)
         all_usage.append(usage)
 
-        if dry_run or i % 50 == 0:
+        if dry_run or i % 100 == 0:
             status = "✓" if pred == gold else "✗"
             print(f"  [{i:4d}] {status} gold={gold!r:35} pred={pred!r:35} ({usage.get('latency_s', '?')}s)")
 
-        # Small rate-limit buffer
-        if not dry_run:
-            time.sleep(0.05)
+        if not dry_run and provider != "mock":
+            time.sleep(0.05)  # Rate-limit buffer
 
-    # ── Metrics ─────────────────────────────────────────────────────────────
+    # ── Metrics ──────────────────────────────────────────────────────────────
     labels = [c for c in SELECTED_CATEGORIES if c in y_true or c in y_pred]
     report = classification_report(y_true, y_pred, labels=labels, output_dict=True, zero_division=0)
     macro_f1 = f1_score(y_true, y_pred, labels=labels, average="macro", zero_division=0)
 
-    total_input_tokens = sum(u.get("input_tokens", 0) for u in all_usage)
-    total_output_tokens = sum(u.get("output_tokens", 0) for u in all_usage)
-    avg_latency = sum(u.get("latency_s", 0) for u in all_usage) / max(len(all_usage), 1)
+    total_in = sum(u.get("input_tokens", 0) for u in all_usage)
+    total_out = sum(u.get("output_tokens", 0) for u in all_usage)
+    avg_lat = sum(u.get("latency_s", 0) for u in all_usage) / max(len(all_usage), 1)
+    cost_run = (total_in / 1_000_000 * input_price) + (total_out / 1_000_000 * output_price)
 
-    # Claude Haiku pricing (as of mid-2025): $0.80/M input, $4.00/M output
-    cost_per_run = (total_input_tokens / 1_000_000 * 0.80) + (total_output_tokens / 1_000_000 * 4.00)
-    # Scale to cost per 1,000 contracts
-    n_contracts_sampled = len(set(ex["input"][:50] for ex in examples))  # rough proxy
-    contracts_per_run = max(1, n_contracts_sampled)
-    avg_examples_per_contract = len(examples) / contracts_per_run
-    cost_per_1k_contracts = (cost_per_run / contracts_per_run) * 1000
+    # Rough cost-per-1k-contracts: avg ~20 paragraphs/contract
+    avg_paragraphs_per_contract = 20
+    cost_per_1k = cost_run / max(len(examples), 1) * avg_paragraphs_per_contract * 1000
 
     print(f"\n{'='*60}")
-    print(f"RESULTS (model={model})")
+    print(f"RESULTS  model={model_label}")
     print(f"{'='*60}")
     print(f"Macro-F1:                {macro_f1:.4f}")
-    print(f"Total input tokens:      {total_input_tokens:,}")
-    print(f"Total output tokens:     {total_output_tokens:,}")
-    print(f"Est. cost this run:      ${cost_per_run:.4f}")
-    print(f"Est. cost/1k contracts:  ${cost_per_1k_contracts:.2f}")
-    print(f"Avg latency/example:     {avg_latency:.3f}s")
+    print(f"Total input tokens:      {total_in:,}")
+    print(f"Total output tokens:     {total_out:,}")
+    print(f"Est. cost this run:      ${cost_run:.4f}")
+    print(f"Est. cost/1k contracts:  ${cost_per_1k:.2f}")
+    print(f"Avg latency/example:     {avg_lat:.3f}s")
     print(f"Errors:                  {len(errors)}")
 
     print(f"\n{'Category':<35} {'P':>6} {'R':>6} {'F1':>6} {'Support':>8}")
@@ -275,21 +328,19 @@ def run(dry_run: bool = False):
             print(f"{cat:<35} {r['precision']:>6.3f} {r['recall']:>6.3f} {r['f1-score']:>6.3f} {int(r['support']):>8}")
     print(f"\n{'macro avg':<35} {report['macro avg']['precision']:>6.3f} {report['macro avg']['recall']:>6.3f} {macro_f1:>6.3f}")
 
-    # Save results (only on full run)
     if not dry_run:
         results = {
-            "model": model,
+            "model": model_label,
+            "provider": provider,
             "n_examples": len(examples),
             "macro_f1": round(macro_f1, 4),
-            "per_category": {
-                cat: report.get(cat, {}) for cat in SELECTED_CATEGORIES
-            },
+            "per_category": {cat: report.get(cat, {}) for cat in SELECTED_CATEGORIES},
             "cost": {
-                "total_input_tokens": total_input_tokens,
-                "total_output_tokens": total_output_tokens,
-                "cost_usd_this_run": round(cost_per_run, 4),
-                "cost_usd_per_1k_contracts": round(cost_per_1k_contracts, 2),
-                "avg_latency_s": round(avg_latency, 3),
+                "total_input_tokens": total_in,
+                "total_output_tokens": total_out,
+                "cost_usd_this_run": round(cost_run, 4),
+                "cost_usd_per_1k_contracts": round(cost_per_1k, 2),
+                "avg_latency_s": round(avg_lat, 3),
             },
             "errors": errors,
         }
@@ -297,13 +348,18 @@ def run(dry_run: bool = False):
             json.dump(results, f, indent=2)
         print(f"\nResults saved to {RESULTS_FILE}")
     else:
-        print("\n[DRY RUN] Results not saved. Re-run without --dry-run for the full evaluation.")
+        print("\n[DRY RUN] Not saved. Run without --dry-run for full evaluation.")
 
     return macro_f1
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dry-run", action="store_true", help="Only run on 5 examples for prompt review")
+    parser.add_argument("--dry-run", action="store_true", help="Run on 5 examples only")
+    parser.add_argument(
+        "--provider", default="anthropic",
+        choices=["anthropic", "openai", "mock"],
+        help="API provider (default: anthropic)",
+    )
     args = parser.parse_args()
-    run(dry_run=args.dry_run)
+    run(dry_run=args.dry_run, provider=args.provider)
