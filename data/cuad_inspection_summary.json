@@ -1,0 +1,313 @@
+{
+  "total_documents": 510,
+  "unique_contracts": 510,
+  "total_qa_pairs": 20910,
+  "total_annotations": 13823,
+  "unique_categories": 41,
+  "category_details": [
+    {
+      "rank": 1,
+      "category": "Document Name",
+      "total_qa_pairs": 510,
+      "positive_examples": 510,
+      "positive_pct": 100.0
+    },
+    {
+      "rank": 2,
+      "category": "Parties",
+      "total_qa_pairs": 510,
+      "positive_examples": 509,
+      "positive_pct": 99.8
+    },
+    {
+      "rank": 3,
+      "category": "Agreement Date",
+      "total_qa_pairs": 510,
+      "positive_examples": 470,
+      "positive_pct": 92.2
+    },
+    {
+      "rank": 4,
+      "category": "Governing Law",
+      "total_qa_pairs": 510,
+      "positive_examples": 437,
+      "positive_pct": 85.7
+    },
+    {
+      "rank": 5,
+      "category": "Expiration Date",
+      "total_qa_pairs": 510,
+      "positive_examples": 413,
+      "positive_pct": 81.0
+    },
+    {
+      "rank": 6,
+      "category": "Effective Date",
+      "total_qa_pairs": 510,
+      "positive_examples": 390,
+      "positive_pct": 76.5
+    },
+    {
+      "rank": 7,
+      "category": "Anti-Assignment",
+      "total_qa_pairs": 510,
+      "positive_examples": 374,
+      "positive_pct": 73.3
+    },
+    {
+      "rank": 8,
+      "category": "Cap On Liability",
+      "total_qa_pairs": 510,
+      "positive_examples": 275,
+      "positive_pct": 53.9
+    },
+    {
+      "rank": 9,
+      "category": "License Grant",
+      "total_qa_pairs": 510,
+      "positive_examples": 255,
+      "positive_pct": 50.0
+    },
+    {
+      "rank": 10,
+      "category": "Audit Rights",
+      "total_qa_pairs": 510,
+      "positive_examples": 214,
+      "positive_pct": 42.0
+    },
+    {
+      "rank": 11,
+      "category": "Termination For Convenience",
+      "total_qa_pairs": 510,
+      "positive_examples": 183,
+      "positive_pct": 35.9
+    },
+    {
+      "rank": 12,
+      "category": "Post-Termination Services",
+      "total_qa_pairs": 510,
+      "positive_examples": 182,
+      "positive_pct": 35.7
+    },
+    {
+      "rank": 13,
+      "category": "Exclusivity",
+      "total_qa_pairs": 510,
+      "positive_examples": 180,
+      "positive_pct": 35.3
+    },
+    {
+      "rank": 14,
+      "category": "Renewal Term",
+      "total_qa_pairs": 510,
+      "positive_examples": 176,
+      "positive_pct": 34.5
+    },
+    {
+      "rank": 15,
+      "category": "Insurance",
+      "total_qa_pairs": 510,
+      "positive_examples": 166,
+      "positive_pct": 32.5
+    },
+    {
+      "rank": 16,
+      "category": "Revenue/Profit Sharing",
+      "total_qa_pairs": 510,
+      "positive_examples": 166,
+      "positive_pct": 32.5
+    },
+    {
+      "rank": 17,
+      "category": "Minimum Commitment",
+      "total_qa_pairs": 510,
+      "positive_examples": 165,
+      "positive_pct": 32.4
+    },
+    {
+      "rank": 18,
+      "category": "Non-Transferable License",
+      "total_qa_pairs": 510,
+      "positive_examples": 138,
+      "positive_pct": 27.1
+    },
+    {
+      "rank": 19,
+      "category": "Ip Ownership Assignment",
+      "total_qa_pairs": 510,
+      "positive_examples": 124,
+      "positive_pct": 24.3
+    },
+    {
+      "rank": 20,
+      "category": "Change Of Control",
+      "total_qa_pairs": 510,
+      "positive_examples": 121,
+      "positive_pct": 23.7
+    },
+    {
+      "rank": 21,
+      "category": "Non-Compete",
+      "total_qa_pairs": 510,
+      "positive_examples": 119,
+      "positive_pct": 23.3
+    },
+    {
+      "rank": 22,
+      "category": "Notice Period To Terminate Renewal",
+      "total_qa_pairs": 510,
+      "positive_examples": 111,
+      "positive_pct": 21.8
+    },
+    {
+      "rank": 23,
+      "category": "Uncapped Liability",
+      "total_qa_pairs": 510,
+      "positive_examples": 111,
+      "positive_pct": 21.8
+    },
+    {
+      "rank": 24,
+      "category": "Covenant Not To Sue",
+      "total_qa_pairs": 510,
+      "positive_examples": 100,
+      "positive_pct": 19.6
+    },
+    {
+      "rank": 25,
+      "category": "Rofr/Rofo/Rofn",
+      "total_qa_pairs": 510,
+      "positive_examples": 85,
+      "positive_pct": 16.7
+    },
+    {
+      "rank": 26,
+      "category": "Volume Restriction",
+      "total_qa_pairs": 510,
+      "positive_examples": 82,
+      "positive_pct": 16.1
+    },
+    {
+      "rank": 27,
+      "category": "Competitive Restriction Exception",
+      "total_qa_pairs": 510,
+      "positive_examples": 76,
+      "positive_pct": 14.9
+    },
+    {
+      "rank": 28,
+      "category": "Warranty Duration",
+      "total_qa_pairs": 510,
+      "positive_examples": 75,
+      "positive_pct": 14.7
+    },
+    {
+      "rank": 29,
+      "category": "Irrevocable Or Perpetual License",
+      "total_qa_pairs": 510,
+      "positive_examples": 70,
+      "positive_pct": 13.7
+    },
+    {
+      "rank": 30,
+      "category": "Liquidated Damages",
+      "total_qa_pairs": 510,
+      "positive_examples": 61,
+      "positive_pct": 12.0
+    },
+    {
+      "rank": 31,
+      "category": "Affiliate License-Licensee",
+      "total_qa_pairs": 510,
+      "positive_examples": 59,
+      "positive_pct": 11.6
+    },
+    {
+      "rank": 32,
+      "category": "No-Solicit Of Employees",
+      "total_qa_pairs": 510,
+      "positive_examples": 59,
+      "positive_pct": 11.6
+    },
+    {
+      "rank": 33,
+      "category": "Joint Ip Ownership",
+      "total_qa_pairs": 510,
+      "positive_examples": 46,
+      "positive_pct": 9.0
+    },
+    {
+      "rank": 34,
+      "category": "Non-Disparagement",
+      "total_qa_pairs": 510,
+      "positive_examples": 38,
+      "positive_pct": 7.5
+    },
+    {
+      "rank": 35,
+      "category": "No-Solicit Of Customers",
+      "total_qa_pairs": 510,
+      "positive_examples": 34,
+      "positive_pct": 6.7
+    },
+    {
+      "rank": 36,
+      "category": "Third Party Beneficiary",
+      "total_qa_pairs": 510,
+      "positive_examples": 32,
+      "positive_pct": 6.3
+    },
+    {
+      "rank": 37,
+      "category": "Most Favored Nation",
+      "total_qa_pairs": 510,
+      "positive_examples": 28,
+      "positive_pct": 5.5
+    },
+    {
+      "rank": 38,
+      "category": "Affiliate License-Licensor",
+      "total_qa_pairs": 510,
+      "positive_examples": 23,
+      "positive_pct": 4.5
+    },
+    {
+      "rank": 39,
+      "category": "Unlimited/All-You-Can-Eat-License",
+      "total_qa_pairs": 510,
+      "positive_examples": 17,
+      "positive_pct": 3.3
+    },
+    {
+      "rank": 40,
+      "category": "Price Restrictions",
+      "total_qa_pairs": 510,
+      "positive_examples": 15,
+      "positive_pct": 2.9
+    },
+    {
+      "rank": 41,
+      "category": "Source Code Escrow",
+      "total_qa_pairs": 510,
+      "positive_examples": 13,
+      "positive_pct": 2.5
+    }
+  ],
+  "sample_contract_titles": [
+    "2ThemartComInc_19990826_10-12G_EX-10.10_6700288_EX-10.10_Co-Branding Agreement_ Agency Agreement",
+    "ABILITYINC_06_15_2020-EX-4.25-SERVICES AGREEMENT",
+    "ACCELERATEDTECHNOLOGIESHOLDINGCORP_04_24_2003-EX-10.13-JOINT VENTURE AGREEMENT",
+    "ACCURAYINC_09_01_2010-EX-10.31-DISTRIBUTOR AGREEMENT",
+    "ADAMSGOLFINC_03_21_2005-EX-10.17-ENDORSEMENT AGREEMENT",
+    "ADAPTIMMUNETHERAPEUTICSPLC_04_06_2017-EX-10.11-STRATEGIC ALLIANCE AGREEMENT",
+    "ADIANUTRITION,INC_04_01_2005-EX-10.D2-RESELLER AGREEMENT",
+    "ADMA BioManufacturing, LLC -  Amendment #3 to Manufacturing Agreement ",
+    "ADUROBIOTECH,INC_06_02_2020-EX-10.7-CONSULTING AGREEMENT",
+    "ADUROBIOTECH,INC_06_02_2020-EX-10.7-CONSULTING AGREEMENT(1)",
+    "AFSALABANCORPINC_08_01_1996-EX-1.1-AGENCY AGREEMENT",
+    "AIRSPANNETWORKSINC_04_11_2000-EX-10.5-Distributor Agreement",
+    "AIRTECHINTERNATIONALGROUPINC_05_08_2000-EX-10.4-FRANCHISE AGREEMENT",
+    "ALAMOGORDOFINANCIALCORP_12_16_1999-EX-1-AGENCY AGREEMENT",
+    "ALCOSTORESINC_12_14_2005-EX-10.26-AGENCY AGREEMENT"
+  ]
+}
