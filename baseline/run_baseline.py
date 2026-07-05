@@ -88,6 +88,17 @@ FEW_SHOT_EXAMPLES = [
         ),
         "output": "Cap On Liability",
     },
+    # Contrastive pair: Uncapped Liability is a carve-out FROM a cap — liability that
+    # *cannot* be excluded.  Without this example the model predicts Cap On Liability
+    # for both categories (confirmed: 19/22 test examples misclassified this way).
+    {
+        "input": (
+            "Nothing in this Agreement shall exclude or limit either party's liability for: "
+            "(a) death or personal injury resulting from the negligence of either party or "
+            "their servants, agents or employees; or (b) fraud or fraudulent misrepresentation."
+        ),
+        "output": "Uncapped Liability",
+    },
     {
         "input": (
             "Subject to the terms and conditions of this Agreement, Company hereby grants "
