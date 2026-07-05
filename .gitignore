@@ -34,6 +34,7 @@ Thumbs.db
 data/raw/*
 !data/raw/.gitkeep
 data/cleaned/
+*.jsonl
 
 # Model artifacts (too large for git)
 training/adapters/*
