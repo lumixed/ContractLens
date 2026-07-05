@@ -30,9 +30,10 @@ env/
 .DS_Store
 Thumbs.db
 
-# Data (raw data too large for git)
+# Data (raw and derived data too large for git)
 data/raw/*
 !data/raw/.gitkeep
+data/cleaned/
 
 # Model artifacts (too large for git)
 training/adapters/*
