@@ -1,0 +1,59 @@
+# PRD (working document, not part of deliverable)
+PRD_CUAD_Clause_Extraction.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data (raw data too large for git)
+data/raw/*
+!data/raw/.gitkeep
+
+# Model artifacts (too large for git)
+training/adapters/*
+!training/adapters/.gitkeep
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.gguf
+
+# W&B
+wandb/
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Docker
+*.log
+
+# Misc
+*.bak
+*.tmp
