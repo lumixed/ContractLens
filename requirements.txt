@@ -1,0 +1,12 @@
+anthropic
+openai
+scikit-learn
+python-dotenv
+torch
+transformers
+peft
+trl
+datasets
+bitsandbytes
+accelerate
+PyYAML
