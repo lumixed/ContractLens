@@ -1,20 +1,3 @@
-"""
-Step 5: Task framing implementation.
-
-Converts normalized contract text + span annotations into an instruction-tuned
-dataset for paragraph-level classification.
-
-Logic:
-1. Chunk contract text into paragraphs (split by \n\n).
-2. For each paragraph, check if it contains any of the annotated clauses.
-3. If yes, label the paragraph with the clause category.
-   (If multiple clauses exist in the same paragraph, we'll currently take
-   the one that covers the most text in that paragraph, or just yield
-   multiple examples. For simplicity, we'll assign the most prominent one).
-4. If no, label the paragraph "None".
-5. Subsample the "None" class to prevent massive class imbalance.
-6. Output in standard Instruction/Input/Output JSONL format.
-"""
 
 import json
 import random

@@ -1,10 +1,3 @@
-"""
-Step 2: Download and inspect the CUAD dataset.
-
-Downloads the raw CUAD SQuAD-format JSON from the official GitHub repo,
-saves to data/raw/, and produces a summary of contracts, annotations,
-and category frequencies.
-"""
 
 import json
 import os

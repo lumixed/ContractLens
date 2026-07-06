@@ -1,17 +1,3 @@
-"""
-Step 3: Clean and normalize the raw CUAD dataset.
-
-Cleaning steps:
-1. Strip leading exhibit headers (e.g., "EXHIBIT 10.6\n\n")
-2. Collapse runs of 2+ spaces to a single space (PDF alignment artifacts)
-3. Collapse runs of 3+ newlines to 2 newlines (preserve paragraph breaks)
-4. Strip trailing whitespace on each line
-5. Recompute all character offsets after cleaning (critical — offsets must
-   remain aligned with the cleaned text)
-
-Outputs normalized JSON per contract to data/cleaned/ for inspection.
-Does NOT split — that's Step 4.
-"""
 
 import json
 import re

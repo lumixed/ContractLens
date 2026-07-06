@@ -1,12 +1,3 @@
-"""
-Step 4: Contract-level train/val/test split.
-
-Splits by CONTRACT (not by clause) to prevent data leakage from
-near-duplicate boilerplate language across train/test.
-
-Split ratios: 70/15/15 with fixed random seed.
-Outputs: split_manifest.json (contract_id → split assignment).
-"""
 
 import json
 import random
