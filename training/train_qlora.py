@@ -98,7 +98,8 @@ def main():
         fp16=False,
         bf16=True,
         optim="paged_adamw_32bit",
-        report_to="none",
+        report_to="wandb" if config.get("use_wandb", False) else "none",
+        run_name=config.get("run_name", "contractlens-qlora"),
         **training_args_kwargs
     )
     

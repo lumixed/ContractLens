@@ -1,0 +1,21 @@
+model_name: "Qwen/Qwen2.5-7B-Instruct"
+train_file: "data/train.jsonl"
+val_file: "data/val.jsonl"
+output_dir: "training/adapters/run3_r32"
+
+# W&B Logging
+use_wandb: true
+run_name: "contractlens-qlora-run3-r32"
+
+# LoRA
+lora_r: 32
+lora_alpha: 64
+lora_dropout: 0.1
+target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
+
+# Training
+batch_size: 4
+gradient_accumulation_steps: 4
+learning_rate: 2e-4
+epochs: 3
+max_seq_length: 1024

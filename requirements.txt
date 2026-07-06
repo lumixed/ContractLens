@@ -10,3 +10,4 @@ datasets==2.19.0
 bitsandbytes==0.43.1
 accelerate==0.29.3
 PyYAML
+wandb
