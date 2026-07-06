@@ -1,22 +1,3 @@
-"""
-Frontier-model baseline for contract clause classification.
-
-Supports multiple providers:
-  --provider anthropic  (claude-haiku-4-5, requires ANTHROPIC_API_KEY + credits)
-  --provider openai     (gpt-4o-mini, requires OPENAI_API_KEY)
-  --provider mock       (keyword heuristic, no API needed — for pipeline testing)
-
-Usage:
-    # Dry run — review prompt on 5 examples
-    python baseline/run_baseline.py --dry-run [--provider openai]
-
-    # Full test-set evaluation
-    python baseline/run_baseline.py [--provider openai]
-
-Requirements:
-    pip install anthropic openai scikit-learn python-dotenv
-"""
-
 import argparse
 import json
 import os
@@ -27,16 +8,13 @@ from pathlib import Path
 from dotenv import load_dotenv
 from sklearn.metrics import classification_report, f1_score
 
-# Load API keys from repo-root .env if present
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-# ── Paths ───────────────────────────────────────────────────────────────────
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent
 TEST_FILE = REPO_ROOT / "data" / "test.jsonl"
 RESULTS_FILE = SCRIPT_DIR / "baseline_results.json"
 
-# ── Categories ──────────────────────────────────────────────────────────────
 SELECTED_CATEGORIES = [
     "Governing Law",
     "Anti-Assignment",
@@ -57,7 +35,6 @@ SELECTED_CATEGORIES = [
 
 CATEGORY_LIST_STR = "\n".join(f"  - {c}" for c in SELECTED_CATEGORIES)
 
-# ── Few-shot examples (from TRAIN split only) ────────────────────────────────
 FEW_SHOT_EXAMPLES = [
     {
         "input": (
@@ -88,9 +65,6 @@ FEW_SHOT_EXAMPLES = [
         ),
         "output": "Cap On Liability",
     },
-    # Contrastive pair: Uncapped Liability is a carve-out FROM a cap — liability that
-    # *cannot* be excluded.  Without this example the model predicts Cap On Liability
-    # for both categories (confirmed: 19/22 test examples misclassified this way).
     {
         "input": (
             "Nothing in this Agreement shall exclude or limit either party's liability for: "
@@ -120,9 +94,6 @@ FEW_SHOT_EXAMPLES = [
     },
 ]
 
-
-# ── Prompt builders ──────────────────────────────────────────────────────────
-
 def build_system_prompt() -> str:
     return (
         "You are a legal AI assistant specialized in analyzing commercial contracts. "
@@ -130,7 +101,6 @@ def build_system_prompt() -> str:
         "Respond with ONLY the category name and nothing else. "
         "Do not include explanations, punctuation, or any other text."
     )
-
 
 def build_user_prompt(clause_text: str) -> str:
     lines = [
@@ -152,9 +122,7 @@ def build_user_prompt(clause_text: str) -> str:
     lines.append("Category:")
     return "\n".join(lines)
 
-
 def normalise_prediction(raw: str) -> str:
-    """Fuzzy-match model output back to a known category."""
     cleaned = raw.strip("'\".,;: ")
     lower = cleaned.lower()
     for cat in SELECTED_CATEGORIES:
@@ -164,9 +132,6 @@ def normalise_prediction(raw: str) -> str:
         if cat.lower() in lower or lower in cat.lower():
             return cat
     return "None"
-
-
-# ── Provider implementations ─────────────────────────────────────────────────
 
 def classify_anthropic(client, clause_text: str) -> tuple[str, dict]:
     import anthropic as _anthropic
@@ -186,7 +151,6 @@ def classify_anthropic(client, clause_text: str) -> tuple[str, dict]:
         "latency_s": round(latency, 3),
         "raw_response": raw,
     }
-
 
 def classify_openai(client, clause_text: str) -> tuple[str, dict]:
     t0 = time.time()
@@ -209,8 +173,6 @@ def classify_openai(client, clause_text: str) -> tuple[str, dict]:
         "raw_response": raw,
     }
 
-
-# Keyword heuristics for pipeline testing without any API
 _MOCK_KEYWORDS = {
     "Governing Law":              ["governed by", "governing law", "jurisdiction", "laws of the state"],
     "Anti-Assignment":            ["shall not assign", "without prior written consent", "consent to assign"],
@@ -229,7 +191,6 @@ _MOCK_KEYWORDS = {
 }
 
 def classify_mock(clause_text: str) -> tuple[str, dict]:
-    """Simple keyword heuristic — no API needed. For pipeline testing only."""
     t0 = time.time()
     text_lower = clause_text.lower()
     for category, patterns in _MOCK_KEYWORDS.items():
@@ -240,39 +201,32 @@ def classify_mock(clause_text: str) -> tuple[str, dict]:
     latency = time.time() - t0
     return "None", {"input_tokens": 0, "output_tokens": 0, "latency_s": round(latency, 4), "raw_response": "[mock:None]"}
 
-
-# ── Main runner ──────────────────────────────────────────────────────────────
-
 def run(dry_run: bool = False, provider: str = "anthropic"):
-    # Initialise client
     if provider == "anthropic":
         api_key = os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
-            raise EnvironmentError("ANTHROPIC_API_KEY not set. Add to .env file.")
+            raise EnvironmentError("ANTHROPIC_API_KEY not set")
         import anthropic as _anthropic
         client = _anthropic.Anthropic(api_key=api_key)
         classify_fn = lambda text: classify_anthropic(client, text)
         model_label = "claude-haiku-4-5"
-        # Pricing: $0.80/M input, $4.00/M output (mid-2025)
         input_price, output_price = 0.80, 4.00
     elif provider == "openai":
         api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
-            raise EnvironmentError("OPENAI_API_KEY not set. Add to .env file.")
+            raise EnvironmentError("OPENAI_API_KEY not set")
         from openai import OpenAI
         client = OpenAI(api_key=api_key)
         classify_fn = lambda text: classify_openai(client, text)
         model_label = "gpt-4o-mini"
-        # Pricing: $0.15/M input, $0.60/M output (mid-2025)
         input_price, output_price = 0.15, 0.60
     elif provider == "mock":
         classify_fn = lambda text: classify_mock(text)
         model_label = "mock-keyword-heuristic"
         input_price, output_price = 0.0, 0.0
     else:
-        raise ValueError(f"Unknown provider: {provider}. Use anthropic, openai, or mock.")
+        raise ValueError(f"Unknown provider: {provider}")
 
-    # Load test examples
     with open(TEST_FILE) as f:
         examples = [json.loads(l) for l in f]
 
@@ -304,9 +258,8 @@ def run(dry_run: bool = False, provider: str = "anthropic"):
             print(f"  [{i:4d}] {status} gold={gold!r:35} pred={pred!r:35} ({usage.get('latency_s', '?')}s)")
 
         if not dry_run and provider != "mock":
-            time.sleep(0.05)  # Rate-limit buffer
+            time.sleep(0.05)
 
-    # ── Metrics ──────────────────────────────────────────────────────────────
     labels = [c for c in SELECTED_CATEGORIES if c in y_true or c in y_pred]
     report = classification_report(y_true, y_pred, labels=labels, output_dict=True, zero_division=0)
     macro_f1 = f1_score(y_true, y_pred, labels=labels, average="macro", zero_division=0)
@@ -316,7 +269,6 @@ def run(dry_run: bool = False, provider: str = "anthropic"):
     avg_lat = sum(u.get("latency_s", 0) for u in all_usage) / max(len(all_usage), 1)
     cost_run = (total_in / 1_000_000 * input_price) + (total_out / 1_000_000 * output_price)
 
-    # Rough cost-per-1k-contracts: avg ~20 paragraphs/contract
     avg_paragraphs_per_contract = 20
     cost_per_1k = cost_run / max(len(examples), 1) * avg_paragraphs_per_contract * 1000
 
@@ -363,14 +315,12 @@ def run(dry_run: bool = False, provider: str = "anthropic"):
 
     return macro_f1
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dry-run", action="store_true", help="Run on 5 examples only")
+    parser.add_argument("--dry-run", action="store_true")
     parser.add_argument(
         "--provider", default="anthropic",
         choices=["anthropic", "openai", "mock"],
-        help="API provider (default: anthropic)",
     )
     args = parser.parse_args()
     run(dry_run=args.dry_run, provider=args.provider)
