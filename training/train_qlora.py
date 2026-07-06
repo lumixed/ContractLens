@@ -7,10 +7,9 @@ from datasets import load_dataset
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
-    BitsAndBytesConfig,
     TrainingArguments
 )
-from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+from peft import LoraConfig, get_peft_model
 from trl import SFTTrainer
 
 def parse_args():
@@ -42,24 +41,15 @@ def main():
     train_dataset = train_dataset.map(format_instruction)
     val_dataset = val_dataset.map(format_instruction)
 
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.bfloat16
-    )
-
     tokenizer = AutoTokenizer.from_pretrained(config["model_name"])
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
         
     model = AutoModelForCausalLM.from_pretrained(
         config["model_name"],
-        quantization_config=bnb_config,
+        torch_dtype=torch.bfloat16,
         device_map="auto"
     )
-    
-    model = prepare_model_for_kbit_training(model)
     
     peft_config = LoraConfig(
         r=config["lora_r"],
