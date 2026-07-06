@@ -1,0 +1,19 @@
+model_name: "meta-llama/Meta-Llama-3-8B"
+train_file: "data/train.jsonl"
+val_file: "data/val.jsonl"
+output_dir: "training/adapters/contractlens-lora"
+
+learning_rate: 2e-4
+batch_size: 4
+gradient_accumulation_steps: 4
+epochs: 3
+max_seq_length: 1024
+
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.05
+target_modules:
+  - "q_proj"
+  - "k_proj"
+  - "v_proj"
+  - "o_proj"
