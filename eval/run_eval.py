@@ -12,6 +12,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent
 TEST_FILE = REPO_ROOT / "data" / "test.jsonl"
 RESULTS_FILE = SCRIPT_DIR / "finetuned_results.json"
+PREDICTIONS_FILE = SCRIPT_DIR / "predictions.jsonl"
 
 SELECTED_CATEGORIES = [
     "Governing Law",
@@ -85,6 +86,7 @@ def main():
 
     y_true = []
     y_pred = []
+    raw_outputs = []
     latencies = []
     
     total_start = time.time()
@@ -120,11 +122,36 @@ def main():
         generated_tokens = outputs[:, input_lengths:]
         decoded_preds = tokenizer.batch_decode(generated_tokens, skip_special_tokens=True)
         
-        for pred in decoded_preds:
-            y_pred.append(normalise_prediction(pred))
+        for i_batch, pred in enumerate(decoded_preds):
+            pred_norm = normalise_prediction(pred)
+            y_pred.append(pred_norm)
+            raw_outputs.append({
+                "gold": batch_examples[i_batch]["output"],
+                "pred_norm": pred_norm,
+                "raw_generated": pred
+            })
             latencies.append(latency / len(batch_examples))
             
     total_time = time.time() - total_start
+    
+    # Debug: Print 20 mismatched outputs (focusing on rare categories)
+    print("\n" + "="*60)
+    print("DEBUG: SAMPLE OF 20 RAW OUTPUTS VS GOLD LABELS")
+    print("="*60)
+    debug_count = 0
+    for res in raw_outputs:
+        # Prioritize printing failures for rare classes
+        if res["gold"] != res["pred_norm"] and res["gold"] != "None":
+            print(f"GOLD: {res['gold']:<30} | PRED_NORM: {res['pred_norm']:<20} | RAW: {repr(res['raw_generated'])}")
+            debug_count += 1
+        if debug_count >= 20:
+            break
+    
+    # Save detailed predictions to file
+    with open(PREDICTIONS_FILE, "w") as f:
+        for res in raw_outputs:
+            f.write(json.dumps(res) + "\n")
+    print(f"\nRaw predictions saved to {PREDICTIONS_FILE}")
     
     labels = [c for c in SELECTED_CATEGORIES if c in y_true or c in y_pred]
     report = classification_report(y_true, y_pred, labels=labels, output_dict=True, zero_division=0)
