@@ -108,7 +108,7 @@ def build_datasets():
                 class_counts[split][best_category] += 1
             else:
                 # No clause -> "None" class
-                if random.random() < NONE_SUBSAMPLE_RATIO:
+                if split != "train" or random.random() < NONE_SUBSAMPLE_RATIO:
                     example = format_example(p_text, "None")
                     splits[split].append(example)
                     class_counts[split]["None"] += 1
