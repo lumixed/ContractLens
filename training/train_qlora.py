@@ -41,6 +41,10 @@ def main():
     train_dataset = load_dataset("json", data_files=config["train_file"], split="train")
     val_dataset = load_dataset("json", data_files=config["val_file"], split="train")
     
+    if args.smoke_test:
+        train_dataset = train_dataset.select(range(min(40, len(train_dataset))))
+        val_dataset = val_dataset.select(range(min(20, len(val_dataset))))
+    
     train_dataset = train_dataset.map(format_instruction)
     val_dataset = val_dataset.map(format_instruction)
 
@@ -92,6 +96,7 @@ def main():
     training_args = TrainingArguments(
         output_dir=config["output_dir"],
         per_device_train_batch_size=config["batch_size"],
+        per_device_eval_batch_size=config["batch_size"],
         gradient_accumulation_steps=config["gradient_accumulation_steps"],
         learning_rate=float(config["learning_rate"]),
         logging_steps=5 if args.smoke_test else 10,
