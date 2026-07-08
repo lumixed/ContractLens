@@ -79,14 +79,14 @@ def main():
             "max_steps": 10,
             "save_strategy": "steps",
             "save_steps": 5,
-            "eval_strategy": "steps",
+            "evaluation_strategy": "steps",
             "eval_steps": 5,
         }
     else:
         training_args_kwargs = {
             "num_train_epochs": config["epochs"],
             "save_strategy": "epoch",
-            "eval_strategy": "epoch",
+            "evaluation_strategy": "epoch",
         }
 
     training_args = TrainingArguments(

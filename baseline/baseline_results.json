@@ -1,104 +1,104 @@
 {
   "model": "claude-haiku-4-5",
   "provider": "anthropic",
-  "n_examples": 1475,
-  "macro_f1": 0.6908,
+  "n_examples": 6394,
+  "macro_f1": 0.41265352926409843,
   "per_category": {
     "Governing Law": {
-      "precision": 0.875,
+      "precision": 0.5109532267613972,
       "recall": 0.9032258064516129,
-      "f1-score": 0.8888888888888888,
+      "f1-score": 0.652684178540077,
       "support": 62.0
     },
     "Anti-Assignment": {
-      "precision": 0.7868852459016393,
+      "precision": 0.35529633759327556,
       "recall": 0.7868852459016393,
-      "f1-score": 0.7868852459016393,
+      "f1-score": 0.4895499104784527,
       "support": 61.0
     },
     "Cap On Liability": {
-      "precision": 0.6491228070175439,
+      "precision": 0.2163772014826761,
       "recall": 0.6271186440677966,
-      "f1-score": 0.6379310344827587,
+      "f1-score": 0.3217423723348514,
       "support": 59.0
     },
     "License Grant": {
-      "precision": 0.803921568627451,
+      "precision": 0.37963370277780756,
       "recall": 0.8118811881188119,
-      "f1-score": 0.8078817733990148,
+      "f1-score": 0.517353939956647,
       "support": 101.0
     },
     "Audit Rights": {
-      "precision": 0.618421052631579,
+      "precision": 0.19478099683536707,
       "recall": 0.9215686274509803,
-      "f1-score": 0.7401574803149606,
+      "f1-score": 0.32159110730539303,
       "support": 51.0
     },
     "Termination For Convenience": {
-      "precision": 0.5,
+      "precision": 0.12987208427389013,
       "recall": 0.782608695652174,
-      "f1-score": 0.6101694915254238,
+      "f1-score": 0.22277515255379715,
       "support": 23.0
     },
     "Exclusivity": {
-      "precision": 0.5483870967741935,
+      "precision": 0.15343184931865003,
       "recall": 0.4722222222222222,
-      "f1-score": 0.5074626865671642,
+      "f1-score": 0.23161018889073065,
       "support": 36.0
     },
     "Renewal Term": {
-      "precision": 0.9032258064516129,
+      "precision": 0.58212478920742,
       "recall": 0.9032258064516129,
-      "f1-score": 0.9032258064516129,
+      "f1-score": 0.707967713109591,
       "support": 31.0
     },
     "Insurance": {
-      "precision": 0.8333333333333334,
+      "precision": 0.42735465979994053,
       "recall": 0.8695652173913043,
-      "f1-score": 0.851063829787234,
+      "f1-score": 0.5730697079867855,
       "support": 23.0
     },
     "Ip Ownership Assignment": {
-      "precision": 0.5333333333333333,
+      "precision": 0.14572164295664652,
       "recall": 0.9142857142857143,
-      "f1-score": 0.6736842105263158,
+      "f1-score": 0.2513779088554822,
       "support": 35.0
     },
     "Change Of Control": {
-      "precision": 0.5454545454545454,
+      "precision": 0.1519009622154424,
       "recall": 0.6666666666666666,
-      "f1-score": 0.6,
+      "f1-score": 0.24742563612471627,
       "support": 27.0
     },
     "Non-Compete": {
-      "precision": 0.6363636363636364,
+      "precision": 0.20710343172546195,
       "recall": 0.5185185185185185,
-      "f1-score": 0.5714285714285714,
+      "f1-score": 0.29598598708950374,
       "support": 27.0
     },
     "Uncapped Liability": {
-      "precision": 0.25,
+      "precision": 0.04739414575210061,
       "recall": 0.09090909090909091,
-      "f1-score": 0.13333333333333333,
+      "f1-score": 0.06230597068803697,
       "support": 22.0
     },
     "Revenue/Profit Sharing": {
-      "precision": 0.6764705882352942,
+      "precision": 0.23785215276030244,
       "recall": 0.8518518518518519,
-      "f1-score": 0.7540983606557377,
+      "f1-score": 0.37187125299760193,
       "support": 54.0
     },
     "None": {
-      "precision": 0.9301745635910225,
+      "precision": 0.9889199165463007,
       "recall": 0.8644264194669756,
-      "f1-score": 0.8960960960960961,
-      "support": 863.0
+      "f1-score": 0.9224919120498106,
+      "support": 5782.0
     }
   },
   "cost": {
     "total_input_tokens": 1258814,
     "total_output_tokens": 7563,
-    "cost_usd_this_run": 1.0373,
+    "cost_usd_this_run": 4.475,
     "cost_usd_per_1k_contracts": 14.07,
     "avg_latency_s": 2.051
   },
