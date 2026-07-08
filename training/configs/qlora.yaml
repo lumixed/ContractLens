@@ -1,4 +1,4 @@
-model_name: "Qwen/Qwen2.5-7B-Instruct"
+model_name: "Qwen/Qwen2.5-3B-Instruct"
 train_file: "data/train.jsonl"
 val_file: "data/val.jsonl"
 output_dir: "training/adapters/contractlens-lora"
