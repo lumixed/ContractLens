@@ -104,7 +104,7 @@ def main():
         **training_args_kwargs
     )
     
-    response_template = "Category: "
+    response_template = "\n\nCategory:"
     collator = DataCollatorForCompletionOnlyLM(response_template, tokenizer=tokenizer)
     
     trainer = SFTTrainer(
