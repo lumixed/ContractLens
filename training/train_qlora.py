@@ -104,8 +104,8 @@ def main():
         **training_args_kwargs
     )
     
-    response_template = "\n\nCategory:"
-    collator = DataCollatorForCompletionOnlyLM(response_template, tokenizer=tokenizer)
+    response_template_ids = tokenizer.encode("Category:", add_special_tokens=False)
+    collator = DataCollatorForCompletionOnlyLM(response_template_ids, tokenizer=tokenizer)
     
     trainer = SFTTrainer(
         model=model,
@@ -118,6 +118,24 @@ def main():
         data_collator=collator,
     )
     
+    # Diagnostic check: ensure collator finds the marker
+    print("Running DataCollator diagnostic check...")
+    sample_batch = [train_dataset[i] for i in range(min(32, len(train_dataset)))]
+    tokenized_samples = [tokenizer(ex["text"], truncation=True, max_length=config["max_seq_length"]) for ex in sample_batch]
+    
+    # Convert tokenized samples to the format the collator expects
+    features = [{"input_ids": ts["input_ids"], "attention_mask": ts["attention_mask"]} for ts in tokenized_samples]
+    collated = collator(features)
+    
+    failed_examples = 0
+    for i, labels in enumerate(collated["labels"]):
+        if (labels != -100).sum() == 0:
+            failed_examples += 1
+            
+    print(f"Diagnostic: {failed_examples} out of {len(sample_batch)} examples had zero unmasked tokens.")
+    if failed_examples > 0:
+        raise ValueError("DataCollator failed to find the response template. Halting training.")
+        
     trainer.train(resume_from_checkpoint=args.resume_from_checkpoint if args.resume_from_checkpoint else None)
     trainer.save_model(config["output_dir"])
     tokenizer.save_pretrained(config["output_dir"])
