@@ -11,7 +11,7 @@ from transformers import (
     TrainingArguments
 )
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
-from trl import SFTTrainer
+from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -20,23 +20,23 @@ def parse_args():
     parser.add_argument("--resume_from_checkpoint", action="store_true", help="Resume from latest checkpoint")
     return parser.parse_args()
 
-def format_instruction(example):
-    prompt = (
-        f"Classify the following contract clause into one of the specified categories.\n\n"
-        f"Categories: Governing Law, Anti-Assignment, Cap On Liability, License Grant, "
-        f"Audit Rights, Termination For Convenience, Exclusivity, Renewal Term, Insurance, "
-        f"Ip Ownership Assignment, Change Of Control, Non-Compete, Uncapped Liability, "
-        f"Revenue/Profit Sharing, None.\n\n"
-        f"Clause: {example['input']}\n\n"
-        f"Category: "
-    )
-    return {"text": f"{prompt}{example['output']}"}
-
 def main():
     args = parse_args()
     
     with open(args.config, "r") as f:
         config = yaml.safe_load(f)
+        
+    tokenizer = AutoTokenizer.from_pretrained(config["model_name"])
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+        
+    def format_instruction(example):
+        prompt = (
+            f"{example['instruction']}\n\n"
+            f"Clause: {example['input']}\n\n"
+            f"Category: "
+        )
+        return {"text": f"{prompt}{example['output']}{tokenizer.eos_token}"}
         
     train_dataset = load_dataset("json", data_files=config["train_file"], split="train")
     val_dataset = load_dataset("json", data_files=config["val_file"], split="train")
@@ -54,10 +54,6 @@ def main():
         bnb_4bit_quant_type="nf4",
         bnb_4bit_compute_dtype=torch.bfloat16
     )
-
-    tokenizer = AutoTokenizer.from_pretrained(config["model_name"])
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
         
     model = AutoModelForCausalLM.from_pretrained(
         config["model_name"],
@@ -108,6 +104,9 @@ def main():
         **training_args_kwargs
     )
     
+    response_template = "Category: "
+    collator = DataCollatorForCompletionOnlyLM(response_template, tokenizer=tokenizer)
+    
     trainer = SFTTrainer(
         model=model,
         train_dataset=train_dataset,
@@ -116,6 +115,7 @@ def main():
         max_seq_length=config["max_seq_length"],
         args=training_args,
         peft_config=peft_config,
+        data_collator=collator,
     )
     
     trainer.train(resume_from_checkpoint=args.resume_from_checkpoint if args.resume_from_checkpoint else None)
